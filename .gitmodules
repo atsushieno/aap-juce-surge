@@ -1,0 +1,9 @@
+[submodule "external/aap-core"]
+	path = external/aap-core
+	url = https://github.com/atsushieno/aap-core.git
+[submodule "external/aap-juce"]
+	path = external/aap-juce
+	url = https://github.com/atsushieno/aap-juce.git
+[submodule "external/surge"]
+	path = external/surge
+	url = https://github.com/surge-synthesizer/surge.git

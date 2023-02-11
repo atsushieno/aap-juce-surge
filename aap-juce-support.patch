@@ -1,0 +1,157 @@
+diff --git a/libs/sst/sst-plugininfra/src/paths_linux.cpp b/libs/sst/sst-plugininfra/src/paths_linux.cpp
+index 1f24bdc..b4b1edd 100644
+--- a/libs/sst/sst-plugininfra/src/paths_linux.cpp
++++ b/libs/sst/sst-plugininfra/src/paths_linux.cpp
+@@ -20,10 +20,14 @@ namespace paths
+ {
+ fs::path homePath()
+ {
++#if ANDROID
++    return fs::path{"/data/data/org.androidaudioplugin.ports.juce.surge_xt"};
++#else
+     const char *const path = std::getenv("HOME");
+     if (!path || !path[0])
+         throw std::runtime_error{"The environment variable HOME is unset or empty"};
+     return fs::path{path};
++#endif
+ }
+ 
+ fs::path sharedLibraryBinaryPath()
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index 173ca278..4499ddba 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -163,3 +163,11 @@ endif()
+ if(NOT CMAKE_CROSSCOMPILING AND NOT SURGE_SKIP_JUCE_FOR_RACK)
+   include(cmake/pluginval.cmake)
+ endif()
++
++# begin AAP specifics -->
++
++message("AAP_DIR: ${AAP_DIR}")
++message("AAP_JUCE_DIR: ${AAP_JUCE_DIR}")
++juce_add_modules(${AAP_JUCE_DIR}/modules/juceaap_audio_plugin_client)
++
++# <-- end AAP specifics
+diff --git a/src/common/CMakeLists.txt b/src/common/CMakeLists.txt
+index 568287ff..5b9706ef 100644
+--- a/src/common/CMakeLists.txt
++++ b/src/common/CMakeLists.txt
+@@ -315,10 +315,12 @@ elseif(UNIX)
+       pthread
+       )
+   else()
++   if(NOT ANDROID)
+     target_link_libraries(${PROJECT_NAME} PRIVATE
+       pthread
+       -Wl,--no-undefined
+       )
++   endif()
+   endif()
+   if(CMAKE_SYSTEM_NAME MATCHES "BSD")
+     target_link_libraries(${PROJECT_NAME} PRIVATE execinfo)
+diff --git a/src/common/DebugHelpers.cpp b/src/common/DebugHelpers.cpp
+index a48dfa89..ee5bb0ba 100644
+--- a/src/common/DebugHelpers.cpp
++++ b/src/common/DebugHelpers.cpp
+@@ -64,7 +64,7 @@ bool Surge::Debug::toggleConsole()
+ 
+ void Surge::Debug::stackTraceToStdout(int depth)
+ {
+-#if MAC || LINUX
++#if MAC || LINUX && !ANDROID
+     void *callstack[128];
+     int i, frames = backtrace(callstack, 128);
+     char **strs = backtrace_symbols(callstack, frames);
+diff --git a/src/surge-fx/CMakeLists.txt b/src/surge-fx/CMakeLists.txt
+index 611194a2..f1d4485f 100644
+--- a/src/surge-fx/CMakeLists.txt
++++ b/src/surge-fx/CMakeLists.txt
+@@ -69,3 +69,41 @@ if(SURGE_BUILD_CLAP)
+ endif()
+ 
+ surge_juce_package(${PROJECT_NAME} "Surge XT Effects")
++
++# begin AAP specifics -->
++
++# They are needed in desktop too, for generate-aap-metadata.
++include_directories(
++        "${AAP_DIR}/include"
++        "${AAP_JUCE_DIR}/modules"
++)
++
++add_definitions([[-DJUCE_PUSH_NOTIFICATIONS_ACTIVITY="com/rmsl/juce/JuceActivity"]])
++
++target_compile_definitions(${PROJECT_NAME} PUBLIC
++        JUCE_PUSH_NOTIFICATIONS=1
++        )
++
++if (ANDROID)
++
++    # dependencies
++    find_library(log "log")
++    find_library(android "android")
++    find_library(glesv2 "GLESv2")
++    find_library(egl "EGL")
++    set(cpufeatures_lib "cpufeatures")
++    set(oboe_lib "oboe")
++
++    target_include_directories(${PROJECT_NAME} PRIVATE
++            "${ANDROID_NDK}/sources/android/cpufeatures"
++            "${OBOE_DIR}/include"
++            )
++
++endif (ANDROID)
++
++target_link_libraries(${PROJECT_NAME}
++        PRIVATE
++        juceaap_audio_plugin_client
++        )
++# <-- end Android specifics
++# <-- end AAP specifics
+diff --git a/src/surge-xt/CMakeLists.txt b/src/surge-xt/CMakeLists.txt
+index 906361c5..b09ee653 100644
+--- a/src/surge-xt/CMakeLists.txt
++++ b/src/surge-xt/CMakeLists.txt
+@@ -213,3 +213,41 @@ target_include_directories(${PROJECT_NAME}
+   )
+ 
+ surge_juce_package(${PROJECT_NAME} "Surge XT")
++
++# begin AAP specifics -->
++
++# They are needed in desktop too, for generate-aap-metadata.
++include_directories(
++        "${AAP_DIR}/include"
++        "${AAP_JUCE_DIR}/modules"
++)
++
++add_definitions([[-DJUCE_PUSH_NOTIFICATIONS_ACTIVITY="com/rmsl/juce/JuceActivity"]])
++
++target_compile_definitions(${PROJECT_NAME} PUBLIC
++        JUCE_PUSH_NOTIFICATIONS=1
++        )
++
++if (ANDROID)
++
++    # dependencies
++    find_library(log "log")
++    find_library(android "android")
++    find_library(glesv2 "GLESv2")
++    find_library(egl "EGL")
++    set(cpufeatures_lib "cpufeatures")
++    set(oboe_lib "oboe")
++
++    target_include_directories(${PROJECT_NAME} PRIVATE
++            "${ANDROID_NDK}/sources/android/cpufeatures"
++            "${OBOE_DIR}/include"
++            )
++
++endif (ANDROID)
++
++target_link_libraries(${PROJECT_NAME}
++        PRIVATE
++        juceaap_audio_plugin_client
++        )
++# <-- end Android specifics
++# <-- end AAP specifics

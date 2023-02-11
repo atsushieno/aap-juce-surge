@@ -1,0 +1,6 @@
+<devices>
+    <device name="Surge XT" manufacturer="androidaudioplugin.org" product="Surge XT">
+        <input-port name="input" />
+    </device>
+</devices>
+
