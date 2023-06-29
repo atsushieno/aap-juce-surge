@@ -14,7 +14,7 @@ android {
         targetSdkVersion 33
         externalNativeBuild {
             cmake {
-                arguments "-DSURGE_SKIP_VST3=1", "-DAAP_DIR=${System.env.AAP_DIR != null ? System.env.AAP_DIR : "$projectDir/../external/aap-core"}", "-DAAP_JUCE_DIR=${System.env.AAP_JUCE_DIR != null ? System.env.AAP_JUCE_DIR : "$projectDir/../external/aap-juce"}", "-DANDROID_STL=c++_shared", "-DANDROID_CPP_FEATURES=exceptions rtti"
+                arguments "-DJUCE_ANDROID=1", "-DSURGE_SKIP_VST3=1", "-DAAP_DIR=${System.env.AAP_DIR != null ? System.env.AAP_DIR : "$projectDir/../external/aap-core"}", "-DAAP_JUCE_DIR=${System.env.AAP_JUCE_DIR != null ? System.env.AAP_JUCE_DIR : "$projectDir/../external/aap-juce"}", "-DANDROID_STL=c++_shared", "-DANDROID_CPP_FEATURES=exceptions rtti"
             }
         }
         proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
@@ -35,6 +35,7 @@ android {
         implementation libs.libcxx.provider
         implementation libs.aap.core
         implementation libs.aap.midi.device.service
+        implementation libs.aap.ui.compose
     }
 
     externalNativeBuild {
