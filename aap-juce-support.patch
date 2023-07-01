@@ -1,3 +1,18 @@
+diff --git a/libs/LuaJitLib/CMakeLists.txt b/libs/LuaJitLib/CMakeLists.txt
+index 54182fcd..cfb8105f 100644
+--- a/libs/LuaJitLib/CMakeLists.txt
++++ b/libs/LuaJitLib/CMakeLists.txt
+@@ -310,8 +310,8 @@ else()
+   IF(MINILUA_USE_LIBM)
+     set(MINILUA_LIBS m)
+   ENDIF()
+-  if(LINUX_ON_ARM)
+-    message(STATUS "Forcing minilua libm on LINUX_ON_ARM")
++  if(LINUX_ON_ARM OR NOT ("${ANDROID_ABI}" STREQUAL ""))
++    message(STATUS "Forcing minilua libm on LINUX_ON_ARM / ANDROID")
+     list(APPEND MINILUA_LIBS m)
+   endif()
+ 
 Submodule libs/sst/sst-plugininfra contains modified content
 diff --git a/libs/sst/sst-plugininfra/src/paths_linux.cpp b/libs/sst/sst-plugininfra/src/paths_linux.cpp
 index 1f24bdc..b4b1edd 100644
@@ -19,10 +34,10 @@ index 1f24bdc..b4b1edd 100644
  
  fs::path sharedLibraryBinaryPath()
 diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
-index 173ca278..b9fb669c 100644
+index 173ca278..85572038 100644
 --- a/src/CMakeLists.txt
 +++ b/src/CMakeLists.txt
-@@ -163,3 +163,11 @@ endif()
+@@ -163,3 +163,10 @@ endif()
  if(NOT CMAKE_CROSSCOMPILING AND NOT SURGE_SKIP_JUCE_FOR_RACK)
    include(cmake/pluginval.cmake)
  endif()
@@ -32,7 +47,6 @@ index 173ca278..b9fb669c 100644
 +message("AAP_DIR: ${AAP_DIR}")
 +message("AAP_JUCE_DIR: ${AAP_JUCE_DIR}")
 +juce_add_modules(${AAP_JUCE_DIR}/aap-modules/aap_audio_processors)
-+
 +# <-- end AAP specifics
 diff --git a/src/common/CMakeLists.txt b/src/common/CMakeLists.txt
 index 568287ff..5b9706ef 100644
