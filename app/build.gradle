@@ -6,12 +6,11 @@ plugins {
 
 android {
     namespace "org.androidaudioplugin.ports.juce.surge_xt"
-    compileSdkVersion 33
+    compileSdk = 33
 
     defaultConfig {
         applicationId "org.androidaudioplugin.ports.juce.surge_xt"
-        minSdkVersion    29
-        targetSdkVersion 33
+        minSdk = 29
         ndk {
             abiFilters "x86_64", "arm64-v8a"
         }
@@ -42,7 +41,7 @@ android {
     externalNativeBuild {
         cmake {
             path "src/main/cpp/CMakeLists.txt"
-            version "3.22.1"
+            version libs.versions.cmake.get()
         }
     }
 
@@ -50,6 +49,9 @@ android {
         prefab true
     }
 
-    ndkVersion "$ndk_version"
+    ndkVersion libs.versions.ndk.get()
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
 }
 
