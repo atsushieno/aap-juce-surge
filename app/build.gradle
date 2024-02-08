@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace "org.androidaudioplugin.ports.juce.surge_xt"
-    compileSdk = 33
+    compileSdk = 34
 
     defaultConfig {
         applicationId "org.androidaudioplugin.ports.juce.surge_xt"
@@ -16,6 +16,8 @@ android {
         }
         externalNativeBuild {
             cmake {
+                // FIXME: it should be removed once we upgrade surge that does not reference lame JUCE version.
+                cppFlags("-Wno-unqualified-std-cast-call")
                 arguments "-DJUCE_ANDROID=1", "-DSURGE_SKIP_VST3=1", "-DAAP_DIR=${System.env.AAP_DIR != null ? System.env.AAP_DIR : "$projectDir/../external/aap-core"}", "-DAAP_JUCE_DIR=${System.env.AAP_JUCE_DIR != null ? System.env.AAP_JUCE_DIR : "$projectDir/../external/aap-juce"}", "-DANDROID_STL=c++_shared", "-DANDROID_CPP_FEATURES=exceptions rtti"
             }
         }
