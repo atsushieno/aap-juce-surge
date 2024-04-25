@@ -6,10 +6,11 @@ plugins {
 
 android {
     namespace "org.androidaudioplugin.ports.juce.surge_xt"
-    compileSdk = 34
+    compileSdkPreview = "VanillaIceCream"
 
     defaultConfig {
         applicationId "org.androidaudioplugin.ports.juce.surge_xt"
+        targetSdk 34
         minSdk = 29
         ndk {
             abiFilters "x86_64", "arm64-v8a"
