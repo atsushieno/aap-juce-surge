@@ -1,5 +1,5 @@
 <devices>
-    <device name="Surge XT UMP" manufacturer="AAP Porting Project" product="Surge XT">
+    <device name="Surge XT" manufacturer="AAP Porting Project" product="Surge XT">
         <port name="port1" />
     </device>
 </devices>
