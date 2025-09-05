@@ -1,24 +1,27 @@
-diff --git a/libs/LuaJitLib/CMakeLists.txt b/libs/LuaJitLib/CMakeLists.txt
-index 54182fcd..cfb8105f 100644
---- a/libs/LuaJitLib/CMakeLists.txt
-+++ b/libs/LuaJitLib/CMakeLists.txt
-@@ -310,8 +310,8 @@ else()
-   IF(MINILUA_USE_LIBM)
-     set(MINILUA_LIBS m)
-   ENDIF()
--  if(LINUX_ON_ARM)
--    message(STATUS "Forcing minilua libm on LINUX_ON_ARM")
-+  if(LINUX_ON_ARM OR NOT ("${ANDROID_ABI}" STREQUAL ""))
-+    message(STATUS "Forcing minilua libm on LINUX_ON_ARM / ANDROID")
-     list(APPEND MINILUA_LIBS m)
-   endif()
- 
+diff --git a/libs/luajitlib/CMakeLists.txt b/libs/luajitlib/CMakeLists.txt
+index 83567e18..6970b1d4 100644
+--- a/libs/luajitlib/CMakeLists.txt
++++ b/libs/luajitlib/CMakeLists.txt
+@@ -58,6 +58,13 @@ if(NOT EXISTS "${LUAJIT_LIBRARY}")
+       RESULT_VARIABLE LUAJIT_RESULT
+       OUTPUT_VARIABLE LUAJIT_OUTPUT
+       ERROR_VARIABLE LUAJIT_ERROR)
++  elseif(ANDROID)
++    message(STATUS "Running ./build-linux-luajit.sh \"${LUAJIT_BUILD_DIR}\" in ${CMAKE_CURRENT_LIST_DIR}")
++    execute_process(WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}"
++      COMMAND ./build-linux-luajit.sh "${LUAJIT_BUILD_DIR}"
++      RESULT_VARIABLE LUAJIT_RESULT
++      OUTPUT_VARIABLE LUAJIT_OUTPUT
++      ERROR_VARIABLE LUAJIT_ERROR)
+   elseif(UNIX)
+     message(STATUS "Running ./build-linux-luajit.sh \"${LUAJIT_BUILD_DIR}\" in ${CMAKE_CURRENT_LIST_DIR}")
+     execute_process(WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}"
 Submodule libs/sst/sst-plugininfra contains modified content
 diff --git a/libs/sst/sst-plugininfra/src/paths_linux.cpp b/libs/sst/sst-plugininfra/src/paths_linux.cpp
-index 1f24bdc..b4b1edd 100644
+index 4a1d94e..a6e0b8b 100644
 --- a/libs/sst/sst-plugininfra/src/paths_linux.cpp
 +++ b/libs/sst/sst-plugininfra/src/paths_linux.cpp
-@@ -20,10 +20,14 @@ namespace paths
+@@ -28,10 +28,14 @@ namespace paths
  {
  fs::path homePath()
  {
@@ -34,10 +37,10 @@ index 1f24bdc..b4b1edd 100644
  
  fs::path sharedLibraryBinaryPath()
 diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
-index 173ca278..85572038 100644
+index 840789f5..1af251c4 100644
 --- a/src/CMakeLists.txt
 +++ b/src/CMakeLists.txt
-@@ -163,3 +163,10 @@ endif()
+@@ -171,3 +171,10 @@ endif()
  if(NOT CMAKE_CROSSCOMPILING AND NOT SURGE_SKIP_JUCE_FOR_RACK)
    include(cmake/pluginval.cmake)
  endif()
@@ -49,40 +52,27 @@ index 173ca278..85572038 100644
 +juce_add_modules(${AAP_JUCE_DIR}/aap-modules/aap_audio_processors)
 +# <-- end AAP specifics
 diff --git a/src/common/CMakeLists.txt b/src/common/CMakeLists.txt
-index 568287ff..5b9706ef 100644
+index c63a929f..aa71860d 100644
 --- a/src/common/CMakeLists.txt
 +++ b/src/common/CMakeLists.txt
-@@ -315,10 +315,12 @@ elseif(UNIX)
+@@ -326,10 +326,12 @@ elseif(UNIX)
        pthread
-       )
+     )
    else()
 +   if(NOT ANDROID)
      target_link_libraries(${PROJECT_NAME} PRIVATE
        pthread
        -Wl,--no-undefined
-       )
+     )
 +   endif()
    endif()
-   if(CMAKE_SYSTEM_NAME MATCHES "BSD")
-     target_link_libraries(${PROJECT_NAME} PRIVATE execinfo)
-diff --git a/src/common/DebugHelpers.cpp b/src/common/DebugHelpers.cpp
-index a48dfa89..ee5bb0ba 100644
---- a/src/common/DebugHelpers.cpp
-+++ b/src/common/DebugHelpers.cpp
-@@ -64,7 +64,7 @@ bool Surge::Debug::toggleConsole()
  
- void Surge::Debug::stackTraceToStdout(int depth)
- {
--#if MAC || LINUX
-+#if MAC || LINUX && !ANDROID
-     void *callstack[128];
-     int i, frames = backtrace(callstack, 128);
-     char **strs = backtrace_symbols(callstack, frames);
+   if(CMAKE_SYSTEM_NAME MATCHES "BSD")
 diff --git a/src/surge-fx/CMakeLists.txt b/src/surge-fx/CMakeLists.txt
-index 611194a2..3caf143a 100644
+index bbf675de..deb7a66e 100644
 --- a/src/surge-fx/CMakeLists.txt
 +++ b/src/surge-fx/CMakeLists.txt
-@@ -69,3 +69,41 @@ if(SURGE_BUILD_CLAP)
+@@ -94,3 +94,42 @@ if(SURGE_BUILD_CLAP)
  endif()
  
  surge_juce_package(${PROJECT_NAME} "Surge XT Effects")
@@ -99,6 +89,7 @@ index 611194a2..3caf143a 100644
 +
 +target_compile_definitions(${PROJECT_NAME} PUBLIC
 +        JUCE_PUSH_NOTIFICATIONS=1
++        JUCEAAP_HAVE_AUDIO_PLAYHEAD_NEW_POSITION_INFO=1
 +        )
 +
 +if (ANDROID)
@@ -125,13 +116,14 @@ index 611194a2..3caf143a 100644
 +# <-- end Android specifics
 +# <-- end AAP specifics
 diff --git a/src/surge-xt/CMakeLists.txt b/src/surge-xt/CMakeLists.txt
-index 906361c5..4dc39d1c 100644
+index 4bcd3baa..d409f488 100644
 --- a/src/surge-xt/CMakeLists.txt
 +++ b/src/surge-xt/CMakeLists.txt
-@@ -213,3 +213,41 @@ target_include_directories(${PROJECT_NAME}
-   )
- 
- surge_juce_package(${PROJECT_NAME} "Surge XT")
+@@ -263,3 +263,43 @@ surge_juce_package(${PROJECT_NAME} "Surge XT")
+ if (${SURGE_BUILD_TESTRUNNER})
+   add_subdirectory(xt-tests)
+ endif()
++
 +
 +# begin AAP specifics -->
 +
@@ -145,6 +137,7 @@ index 906361c5..4dc39d1c 100644
 +
 +target_compile_definitions(${PROJECT_NAME} PUBLIC
 +        JUCE_PUSH_NOTIFICATIONS=1
++        JUCEAAP_HAVE_AUDIO_PLAYHEAD_NEW_POSITION_INFO=1
 +        )
 +
 +if (ANDROID)
