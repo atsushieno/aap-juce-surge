@@ -15,4 +15,8 @@ APP_SHARED_CODE_LIBS="src/platform/libsurge-platform.a:src/common/libsurge-commo
 PATCH_FILE=$(PWD)/aap-juce-support.patch
 PATCH_DEPTH=1
 
+# JUCE patches if any
+JUCE_PATCHES= \
+        $(shell pwd)/external/aap-juce/juce-patches/7.0.12/disable-cgwindowlistcreateimage.patch
+
 include $(AAP_JUCE_DIR)/Makefile.cmake-common
