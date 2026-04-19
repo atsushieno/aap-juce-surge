@@ -28,6 +28,32 @@ index 31bee8d5..6b2aed43 100644
 +message("AAP_JUCE_DIR: ${AAP_JUCE_DIR}")
 +juce_add_modules(${AAP_JUCE_DIR}/aap-modules/aap_audio_processors)
 +# <-- end AAP specifics
+diff --git a/src/surge-xt/gui/SurgeGUIEditor.cpp b/src/surge-xt/gui/SurgeGUIEditor.cpp
+index 0000000..0000000 100644
+--- a/src/surge-xt/gui/SurgeGUIEditor.cpp
++++ b/src/surge-xt/gui/SurgeGUIEditor.cpp
+@@ -2874,6 +2874,9 @@ juce::PopupMenu::Options SurgeGUIEditor::popupMenuOptions(const juce::Point<int>
+ {
+     auto o = juce::PopupMenu::Options();
+     o = o.withTargetComponent(juceEditor);
++#if JUCE_ANDROID
++    o = o.withParentComponent(juceEditor->getTopLevelComponent());
++#endif
+     if (where.x > 0 && where.y > 0)
+diff --git a/src/surge-xt/gui/widgets/XMLConfiguredMenus.cpp b/src/surge-xt/gui/widgets/XMLConfiguredMenus.cpp
+index 0000000..0000000 100644
+--- a/src/surge-xt/gui/widgets/XMLConfiguredMenus.cpp
++++ b/src/surge-xt/gui/widgets/XMLConfiguredMenus.cpp
+@@ -561,7 +561,13 @@
+-    void showMenu() { comp->menu.showMenuAsync(juce::PopupMenu::Options()); }
++    void showMenu()
++    {
++        auto o = juce::PopupMenu::Options().withTargetComponent(comp);
++#if JUCE_ANDROID
++        o = o.withParentComponent(comp->getTopLevelComponent());
++#endif
++        comp->menu.showMenuAsync(o);
++    }
 diff --git a/src/common/SurgeStorage.cpp b/src/common/SurgeStorage.cpp
 index 0000000..0000000 100644
 --- a/src/common/SurgeStorage.cpp
