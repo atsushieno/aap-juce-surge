@@ -28,6 +28,20 @@ index 31bee8d5..6b2aed43 100644
 +message("AAP_JUCE_DIR: ${AAP_JUCE_DIR}")
 +juce_add_modules(${AAP_JUCE_DIR}/aap-modules/aap_audio_processors)
 +# <-- end AAP specifics
+diff --git a/src/common/SurgeStorage.cpp b/src/common/SurgeStorage.cpp
+index 0000000..0000000 100644
+--- a/src/common/SurgeStorage.cpp
++++ b/src/common/SurgeStorage.cpp
+@@ -205,6 +205,13 @@ SurgeStorage::SurgeStorage(const SurgeStorage::SurgeStorageConfig &config) : ot
+     // userDataPath = fs::path{"/good/luck/bozo"};
+     // userDataPath = fs::path{"/usr/sbin"};
++#elif ANDROID
++    if (!hasSuppliedDataPath)
++        datapath = sst::plugininfra::paths::homePath() / "Documents" / sxt;
++    else
++        datapath = fs::path{suppliedDataPath};
++    userDataPath = sst::plugininfra::paths::homePath() / "Documents" / sxt;
+ #elif LINUX
 diff --git a/src/common/CMakeLists.txt b/src/common/CMakeLists.txt
 index 2d5ba615..e6f9eab0 100644
 --- a/src/common/CMakeLists.txt
@@ -183,7 +197,7 @@ index 4a1d94e..a6e0b8b 100644
  fs::path homePath()
  {
 +#if ANDROID
-+    return fs::path{"/data/data/org.androidaudioplugin.ports.juce.surge_xt"};
++    return fs::path{"/data/data/org.androidaudioplugin.ports.juce.surge_xt/files"};
 +#else
      const char *const path = std::getenv("HOME");
      if (!path || !path[0])
@@ -191,5 +205,5 @@ index 4a1d94e..a6e0b8b 100644
      return fs::path{path};
 +#endif
  }
- 
+
  fs::path sharedLibraryBinaryPath()
