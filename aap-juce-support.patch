@@ -13,26 +13,6 @@ index 54182fcd..cfb8105f 100644
      list(APPEND MINILUA_LIBS m)
    endif()
  
-Submodule libs/sst/sst-plugininfra contains modified content
-diff --git a/libs/sst/sst-plugininfra/src/paths_linux.cpp b/libs/sst/sst-plugininfra/src/paths_linux.cpp
-index 4a1d94e..a6e0b8b 100644
---- a/libs/sst/sst-plugininfra/src/paths_linux.cpp
-+++ b/libs/sst/sst-plugininfra/src/paths_linux.cpp
-@@ -28,10 +28,14 @@ namespace paths
- {
- fs::path homePath()
- {
-+#if ANDROID
-+    return fs::path{"/data/data/org.androidaudioplugin.ports.juce.surge_xt"};
-+#else
-     const char *const path = std::getenv("HOME");
-     if (!path || !path[0])
-         throw std::runtime_error{"The environment variable HOME is unset or empty"};
-     return fs::path{path};
-+#endif
- }
- 
- fs::path sharedLibraryBinaryPath()
 diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
 index 31bee8d5..6b2aed43 100644
 --- a/src/CMakeLists.txt
@@ -160,3 +140,56 @@ index 25897a35..e63706fa 100644
 +)
 +# <-- end Android specifics
 +# <-- end AAP specifics
+diff --git a/src/surge-xt/gui/SurgeJUCELookAndFeel.cpp b/src/surge-xt/gui/SurgeJUCELookAndFeel.cpp
+index f13756aa..98c1e4ba 100644
+--- a/src/surge-xt/gui/SurgeJUCELookAndFeel.cpp
++++ b/src/surge-xt/gui/SurgeJUCELookAndFeel.cpp
+@@ -486,6 +486,15 @@ void SurgeJUCELookAndFeel::drawPopupMenuSectionHeaderWithOptions(Graphics &graph
+     LookAndFeel_V2::drawPopupMenuSectionHeaderWithOptions(graphics, area, sectionName, options);
+ }
+ 
++juce::PopupMenu::Options SurgeJUCELookAndFeel::getOptionsForComboBoxPopupMenu(juce::ComboBox &box,
++                                                                               juce::Label &label)
++{
++    auto options = LookAndFeel_V4::getOptionsForComboBoxPopupMenu(box, label);
++    if (auto *parent = box.getTopLevelComponent())
++        options = options.withParentComponent(parent);
++    return options;
++}
++
+ void SurgeJUCELookAndFeel::drawToggleButton(Graphics &g, ToggleButton &button,
+                                             bool shouldDrawButtonAsHighlighted,
+                                             bool shouldDrawButtonAsDown)
+diff --git a/src/surge-xt/gui/SurgeJUCELookAndFeel.h b/src/surge-xt/gui/SurgeJUCELookAndFeel.h
+index 7d860e8b..370dfc40 100644
+--- a/src/surge-xt/gui/SurgeJUCELookAndFeel.h
++++ b/src/surge-xt/gui/SurgeJUCELookAndFeel.h
+@@ -71,6 +71,9 @@ class SurgeJUCELookAndFeel : public juce::LookAndFeel_V4, public Surge::GUI::Ski
+                                                const juce::String &sectionName,
+                                                const juce::PopupMenu::Options &options) override;
+ 
++    juce::PopupMenu::Options getOptionsForComboBoxPopupMenu(juce::ComboBox &box,
++                                                            juce::Label &label) override;
++
+     void drawCornerResizer(juce::Graphics &g, int w, int h, bool, bool) override{};
+ 
+     void drawToggleButton(juce::Graphics &g, juce::ToggleButton &b,
+diff --git a/libs/sst/sst-plugininfra/src/paths_linux.cpp b/libs/sst/sst-plugininfra/src/paths_linux.cpp
+index 4a1d94e..a6e0b8b 100644
+--- a/libs/sst/sst-plugininfra/src/paths_linux.cpp
++++ b/libs/sst/sst-plugininfra/src/paths_linux.cpp
+@@ -28,10 +28,14 @@ namespace paths
+ {
+ fs::path homePath()
+ {
++#if ANDROID
++    return fs::path{"/data/data/org.androidaudioplugin.ports.juce.surge_xt"};
++#else
+     const char *const path = std::getenv("HOME");
+     if (!path || !path[0])
+         throw std::runtime_error{"The environment variable HOME is unset or empty"};
+     return fs::path{path};
++#endif
+ }
+ 
+ fs::path sharedLibraryBinaryPath()

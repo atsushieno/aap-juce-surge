@@ -3,7 +3,7 @@
 <plugins xmlns="urn:org.androidaudioplugin.core">
   <plugin name="AAP Surge-XT" category="Instrument" developer="Surge Synth Team"
       unique-id="aap-juce-surge-xt" library="libsurge-xt_Standalone.so"
-      entrypoint="GetJuceAAPFactoryStandalone" gui:ui-view-factory="org.androidaudioplugin.ui.compose.ComposeAudioPluginViewFactory"
+      entrypoint="GetJuceAAPFactoryStandalone" gui:ui-view-factory="org.androidaudioplugin.juce.JuceAudioPluginViewFactory"
       xmlns:gui="urn://androidaudioplugin.org/extensions/gui">
     <extensions>
       <extension uri="urn://androidaudioplugin.org/extensions/plugin-info/v3"/>
