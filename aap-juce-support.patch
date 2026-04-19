@@ -63,10 +63,10 @@ index 2d5ba615..e6f9eab0 100644
    target_compile_definitions(${PROJECT_NAME} PUBLIC LINUX=1)
  
 diff --git a/src/surge-fx/CMakeLists.txt b/src/surge-fx/CMakeLists.txt
-index ff9c96ae..c94661ce 100644
+index ff9c96ae..270bf8cd 100644
 --- a/src/surge-fx/CMakeLists.txt
 +++ b/src/surge-fx/CMakeLists.txt
-@@ -95,3 +95,42 @@ if(SURGE_BUILD_CLAP)
+@@ -95,3 +95,44 @@ if(SURGE_BUILD_CLAP)
  endif()
  
  surge_juce_package(${PROJECT_NAME} "Surge XT Effects")
@@ -93,6 +93,7 @@ index ff9c96ae..c94661ce 100644
 +    find_library(android "android")
 +    find_library(glesv2 "GLESv2")
 +    find_library(egl "EGL")
++    find_package(androidaudioplugin REQUIRED CONFIG)
 +    set(cpufeatures_lib "cpufeatures")
 +    set(oboe_lib "oboe")
 +
@@ -105,15 +106,16 @@ index ff9c96ae..c94661ce 100644
 +
 +target_link_libraries(${PROJECT_NAME}
 +        PRIVATE
++        androidaudioplugin::androidaudioplugin
 +        aap_audio_processors
 +        )
 +# <-- end Android specifics
 +# <-- end AAP specifics
 diff --git a/src/surge-xt/CMakeLists.txt b/src/surge-xt/CMakeLists.txt
-index 25897a35..1bce85de 100644
+index 25897a35..e63706fa 100644
 --- a/src/surge-xt/CMakeLists.txt
 +++ b/src/surge-xt/CMakeLists.txt
-@@ -257,3 +257,42 @@ surge_juce_package(${PROJECT_NAME} "Surge XT")
+@@ -257,3 +257,44 @@ surge_juce_package(${PROJECT_NAME} "Surge XT")
  if (${SURGE_BUILD_TESTRUNNER})
    add_subdirectory(xt-tests)
  endif()
@@ -140,6 +142,7 @@ index 25897a35..1bce85de 100644
 +  find_library(android "android")
 +  find_library(glesv2 "GLESv2")
 +  find_library(egl "EGL")
++  find_package(androidaudioplugin REQUIRED CONFIG)
 +  set(cpufeatures_lib "cpufeatures")
 +  set(oboe_lib "oboe")
 +
@@ -152,6 +155,7 @@ index 25897a35..1bce85de 100644
 +
 +target_link_libraries(${PROJECT_NAME}
 +        PRIVATE
++        androidaudioplugin::androidaudioplugin
 +        aap_audio_processors
 +)
 +# <-- end Android specifics
