@@ -75,5 +75,10 @@ afterEvaluate {
     android.applicationVariants.all { variant ->
         variant.mergeAssetsProvider.configure { dependsOn copySurgeAssets }
     }
-}
 
+    tasks.matching { task ->
+        task.name.startsWith("generate") && task.name.endsWith("LintVitalReportModel")
+    }.configureEach {
+        dependsOn copySurgeAssets
+    }
+}
