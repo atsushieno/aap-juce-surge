@@ -71,9 +71,8 @@ task copySurgeAssets(type: Copy) {
     into 'src/main/assets/Surge XT'
 }
 
-afterEvaluate {
-    android.applicationVariants.all { variant ->
-        variant.mergeAssetsProvider.configure { dependsOn copySurgeAssets }
-    }
+
+tasks.matching { it.name == "preBuild" }.configureEach {
+    dependsOn copySurgeAssets
 }
 
