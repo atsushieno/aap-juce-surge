@@ -1,21 +1,156 @@
-diff --git a/libs/LuaJitLib/CMakeLists.txt b/libs/LuaJitLib/CMakeLists.txt
-index 54182fcd..cfb8105f 100644
---- a/libs/LuaJitLib/CMakeLists.txt
-+++ b/libs/LuaJitLib/CMakeLists.txt
-@@ -310,8 +310,8 @@ else()
-   IF(MINILUA_USE_LIBM)
-     set(MINILUA_LIBS m)
-   ENDIF()
--  if(LINUX_ON_ARM)
--    message(STATUS "Forcing minilua libm on LINUX_ON_ARM")
-+  if(LINUX_ON_ARM OR NOT ("${ANDROID_ABI}" STREQUAL ""))
-+    message(STATUS "Forcing minilua libm on LINUX_ON_ARM / ANDROID")
-     list(APPEND MINILUA_LIBS m)
-   endif()
- 
+diff --git a/libs/luajitlib/CMakeLists.txt b/libs/luajitlib/CMakeLists.txt
+index 83567e18..f5ab381b 100644
+--- a/libs/luajitlib/CMakeLists.txt
++++ b/libs/luajitlib/CMakeLists.txt
+@@ -50,8 +50,16 @@ endfunction()
+ # Build LuaJIT if existing library is not found
+ if(NOT EXISTS "${LUAJIT_LIBRARY}")
+   message(STATUS "Building LuaJIT at CMake time right now; configure with -DSURGE_SKIP_LUA=TRUE to disable")
++  # Check ANDROID before APPLE/UNIX as Android is also UNIX
++  if(ANDROID)
++    message(STATUS "Running ./build-android-luajit.sh \"${LUAJIT_BUILD_DIR}\" in ${CMAKE_CURRENT_LIST_DIR}")
++    execute_process(WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}"
++      COMMAND ./build-android-luajit.sh "${LUAJIT_BUILD_DIR}" "${CMAKE_ANDROID_NDK}" "${CMAKE_ANDROID_ARCH_ABI}" "${ANDROID_PLATFORM}"
++      RESULT_VARIABLE LUAJIT_RESULT
++      OUTPUT_VARIABLE LUAJIT_OUTPUT
++      ERROR_VARIABLE LUAJIT_ERROR)
+   # Check APPLE before UNIX
+-  if(APPLE)
++  elseif(APPLE)
+     message(STATUS "Running ./build-macos-luajit.sh \"${LUAJIT_BUILD_DIR}\" in ${CMAKE_CURRENT_LIST_DIR}")
+     execute_process(WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}"
+       COMMAND ./build-macos-luajit.sh "${LUAJIT_BUILD_DIR}"
+diff --git a/libs/luajitlib/build-android-luajit.sh b/libs/luajitlib/build-android-luajit.sh
+new file mode 100755
+index 00000000..80845a21
+--- /dev/null
++++ b/libs/luajitlib/build-android-luajit.sh
+@@ -0,0 +1,90 @@
++#!/bin/bash
++# Cross-compile LuaJIT for Android using NDK
++
++error=0
++
++BD="$1"
++NDK="$2"
++ABI="${3:-arm64-v8a}"
++PLATFORM="${4:-android-29}"
++
++if [[ -z "${BD}" || -z "${NDK}" ]]; then
++    echo "Usage: build-android-luajit.sh BUILDDIR NDK_DIR [ABI] [PLATFORM]"
++    exit 1
++fi
++
++API_LEVEL="${PLATFORM#android-}"
++
++echo "Building LuaJIT for Android: ABI=${ABI}, API=${API_LEVEL}"
++echo "Build dir: ${BD}"
++echo "NDK: ${NDK}"
++
++SD="${BD}/src"
++OD="${BD}/bin"
++HD="${BD}/include"
++
++rm -rf "${BD}" || error=1
++mkdir -p "${BD}" || error=1
++mkdir "${SD}" || error=1
++mkdir "${OD}" || error=1
++mkdir "${HD}" || error=1
++
++if [[ "$(uname)" == "Darwin" ]]; then
++    TOOLCHAIN="${NDK}/toolchains/llvm/prebuilt/darwin-x86_64"
++else
++    TOOLCHAIN="${NDK}/toolchains/llvm/prebuilt/linux-x86_64"
++fi
++
++case "${ABI}" in
++    arm64-v8a)
++        TRIPLE="aarch64-linux-android${API_LEVEL}"
++        ;;
++    armeabi-v7a)
++        TRIPLE="armv7a-linux-androideabi${API_LEVEL}"
++        ;;
++    x86)
++        TRIPLE="i686-linux-android${API_LEVEL}"
++        ;;
++    x86_64)
++        TRIPLE="x86_64-linux-android${API_LEVEL}"
++        ;;
++    *)
++        echo "Unsupported ABI: ${ABI}"
++        exit 1
++        ;;
++esac
++
++NDK_CC="${TOOLCHAIN}/bin/${TRIPLE}-clang"
++NDK_AR="${TOOLCHAIN}/bin/llvm-ar"
++NDK_RANLIB="${TOOLCHAIN}/bin/llvm-ranlib"
++
++echo "${OD}"
++ls -al "${OD}" || error=1
++echo "${HD}"
++ls -al "${HD}" || error=1
++
++cp -r LuaJIT "${SD}" || error=1
++cd "${SD}/LuaJIT/src" || error=1
++
++make amalg BUILDMODE=static \
++    HOST_CC="clang" \
++    CC="${NDK_CC}" \
++    TARGET_AR="${NDK_AR} rcus" \
++    RANLIB="${NDK_RANLIB}" \
++    TARGET_SYS=Linux \
++    TARGET_FLAGS="-fPIC" \
++    CFLAGS="-fPIC" || error=1
++
++cp lib*a "${OD}" || error=1
++cp *.h "${HD}" || error=1
++cp *.hpp "${HD}" 2>/dev/null || true
++
++echo "${OD}"
++ls -al "${OD}"
++echo "${HD}"
++ls -al "${HD}"
++
++if [ "${error}" -ne 0 ]; then
++    exit 1
++fi
++exit 0
 Submodule libs/sst/sst-plugininfra contains modified content
+diff --git a/libs/sst/sst-plugininfra/src/misc_linux.cpp b/libs/sst/sst-plugininfra/src/misc_linux.cpp
+index a9b5524..4fdd398 100644
+--- a/libs/sst/sst-plugininfra/src/misc_linux.cpp
++++ b/libs/sst/sst-plugininfra/src/misc_linux.cpp
+@@ -16,7 +16,9 @@
+ 
+ #include <stdio.h>
+ #include <cstdlib>
++#if !defined(__ANDROID__)
+ #include <execinfo.h>
++#endif
+ #include <string>
+ #include <sstream>
+ #include <iomanip>
+@@ -38,6 +40,7 @@ std::string toOSCase(const std::string &text) { return text; }
+ 
+ std::string stackTraceToString(int depth)
+ {
++#if !defined(__ANDROID__)
+     void *callstack[128];
+     int i, frames = backtrace(callstack, 128);
+     char **strs = backtrace_symbols(callstack, frames);
+@@ -51,6 +54,9 @@ std::string stackTraceToString(int depth)
+     }
+     free(strs);
+     return oss.str();
++#else
++    return "Stack trace not available on Android";
++#endif
+ }
+ 
+ std::string getLastSystemError() { return std::string(strerror(errno)); }
 diff --git a/libs/sst/sst-plugininfra/src/paths_linux.cpp b/libs/sst/sst-plugininfra/src/paths_linux.cpp
-index 4a1d94e..9cd33c7 100644
+index 9e37e5e..1943187 100644
 --- a/libs/sst/sst-plugininfra/src/paths_linux.cpp
 +++ b/libs/sst/sst-plugininfra/src/paths_linux.cpp
 @@ -28,10 +28,14 @@ namespace paths
@@ -34,10 +169,10 @@ index 4a1d94e..9cd33c7 100644
  
  fs::path sharedLibraryBinaryPath()
 diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
-index 31bee8d5..6b2aed43 100644
+index 6a42db1a..dbc6d736 100644
 --- a/src/CMakeLists.txt
 +++ b/src/CMakeLists.txt
-@@ -164,3 +164,10 @@ endif()
+@@ -186,3 +186,10 @@ endif()
  if(NOT CMAKE_CROSSCOMPILING AND NOT SURGE_SKIP_JUCE_FOR_RACK)
    include(cmake/pluginval.cmake)
  endif()
@@ -49,10 +184,10 @@ index 31bee8d5..6b2aed43 100644
 +juce_add_modules(${AAP_JUCE_DIR}/aap-modules/aap_audio_processors)
 +# <-- end AAP specifics
 diff --git a/src/common/CMakeLists.txt b/src/common/CMakeLists.txt
-index 2d5ba615..e6f9eab0 100644
+index 846189cc..32b90235 100644
 --- a/src/common/CMakeLists.txt
 +++ b/src/common/CMakeLists.txt
-@@ -306,6 +306,9 @@ if(APPLE)
+@@ -284,6 +284,9 @@ if(APPLE)
      "-framework CoreFoundation"
      "-framework Foundation"
    )
@@ -63,10 +198,10 @@ index 2d5ba615..e6f9eab0 100644
    target_compile_definitions(${PROJECT_NAME} PUBLIC LINUX=1)
  
 diff --git a/src/common/SurgeStorage.cpp b/src/common/SurgeStorage.cpp
-index 04868534..c3704ddc 100644
+index 1b0bc503..329ae598 100644
 --- a/src/common/SurgeStorage.cpp
 +++ b/src/common/SurgeStorage.cpp
-@@ -205,6 +205,12 @@ SurgeStorage::SurgeStorage(const SurgeStorage::SurgeStorageConfig &config) : oth
+@@ -216,6 +216,12 @@ SurgeStorage::SurgeStorage(const SurgeStorage::SurgeStorageConfig &config) : oth
      // These are how I test a broken windows install for documents
      // userDataPath = fs::path{"/good/luck/bozo"};
      // userDataPath = fs::path{"/usr/sbin"};
@@ -80,10 +215,10 @@ index 04868534..c3704ddc 100644
      const auto installPath = sst::plugininfra::paths::sharedLibraryBinaryPath().parent_path();
  
 diff --git a/src/surge-fx/CMakeLists.txt b/src/surge-fx/CMakeLists.txt
-index ff9c96ae..270bf8cd 100644
+index d00389c5..a3bf8a49 100644
 --- a/src/surge-fx/CMakeLists.txt
 +++ b/src/surge-fx/CMakeLists.txt
-@@ -95,3 +95,44 @@ if(SURGE_BUILD_CLAP)
+@@ -97,3 +97,44 @@ if(SURGE_BUILD_CLAP)
  endif()
  
  surge_juce_package(${PROJECT_NAME} "Surge XT Effects")
@@ -129,10 +264,10 @@ index ff9c96ae..270bf8cd 100644
 +# <-- end Android specifics
 +# <-- end AAP specifics
 diff --git a/src/surge-xt/CMakeLists.txt b/src/surge-xt/CMakeLists.txt
-index 25897a35..e63706fa 100644
+index 3c23c116..e081ada7 100644
 --- a/src/surge-xt/CMakeLists.txt
 +++ b/src/surge-xt/CMakeLists.txt
-@@ -257,3 +257,44 @@ surge_juce_package(${PROJECT_NAME} "Surge XT")
+@@ -268,3 +268,44 @@ surge_juce_package(${PROJECT_NAME} "Surge XT")
  if (${SURGE_BUILD_TESTRUNNER})
    add_subdirectory(xt-tests)
  endif()
@@ -178,10 +313,10 @@ index 25897a35..e63706fa 100644
 +# <-- end Android specifics
 +# <-- end AAP specifics
 diff --git a/src/surge-xt/gui/SurgeGUIEditor.cpp b/src/surge-xt/gui/SurgeGUIEditor.cpp
-index 3d4dd10d..20bda020 100644
+index c2fa86e4..47b23924 100644
 --- a/src/surge-xt/gui/SurgeGUIEditor.cpp
 +++ b/src/surge-xt/gui/SurgeGUIEditor.cpp
-@@ -2875,6 +2875,9 @@ juce::PopupMenu::Options SurgeGUIEditor::popupMenuOptions(const juce::Point<int>
+@@ -2827,6 +2827,9 @@ juce::PopupMenu::Options SurgeGUIEditor::popupMenuOptions(const juce::Point<int>
  {
      auto o = juce::PopupMenu::Options();
      o = o.withTargetComponent(juceEditor);
@@ -192,10 +327,10 @@ index 3d4dd10d..20bda020 100644
      {
          auto r = juce::Rectangle<int>().withWidth(1).withHeight(1).withPosition(
 diff --git a/src/surge-xt/gui/SurgeJUCELookAndFeel.cpp b/src/surge-xt/gui/SurgeJUCELookAndFeel.cpp
-index f13756aa..98c1e4ba 100644
+index 8cfc9465..39929533 100644
 --- a/src/surge-xt/gui/SurgeJUCELookAndFeel.cpp
 +++ b/src/surge-xt/gui/SurgeJUCELookAndFeel.cpp
-@@ -486,6 +486,15 @@ void SurgeJUCELookAndFeel::drawPopupMenuSectionHeaderWithOptions(Graphics &graph
+@@ -489,6 +489,15 @@ void SurgeJUCELookAndFeel::drawPopupMenuSectionHeaderWithOptions(Graphics &graph
      LookAndFeel_V2::drawPopupMenuSectionHeaderWithOptions(graphics, area, sectionName, options);
  }
  
@@ -212,7 +347,7 @@ index f13756aa..98c1e4ba 100644
                                              bool shouldDrawButtonAsHighlighted,
                                              bool shouldDrawButtonAsDown)
 diff --git a/src/surge-xt/gui/SurgeJUCELookAndFeel.h b/src/surge-xt/gui/SurgeJUCELookAndFeel.h
-index 7d860e8b..370dfc40 100644
+index 26e4d7bc..04b2fd15 100644
 --- a/src/surge-xt/gui/SurgeJUCELookAndFeel.h
 +++ b/src/surge-xt/gui/SurgeJUCELookAndFeel.h
 @@ -71,6 +71,9 @@ class SurgeJUCELookAndFeel : public juce::LookAndFeel_V4, public Surge::GUI::Ski
@@ -222,14 +357,14 @@ index 7d860e8b..370dfc40 100644
 +    juce::PopupMenu::Options getOptionsForComboBoxPopupMenu(juce::ComboBox &box,
 +                                                            juce::Label &label) override;
 +
-     void drawCornerResizer(juce::Graphics &g, int w, int h, bool, bool) override{};
+     void drawCornerResizer(juce::Graphics &g, int w, int h, bool, bool) override {};
  
      void drawToggleButton(juce::Graphics &g, juce::ToggleButton &b,
 diff --git a/src/surge-xt/gui/widgets/XMLConfiguredMenus.cpp b/src/surge-xt/gui/widgets/XMLConfiguredMenus.cpp
-index a91bf19e..6adfef88 100644
+index bb309750..209d7d1e 100644
 --- a/src/surge-xt/gui/widgets/XMLConfiguredMenus.cpp
 +++ b/src/surge-xt/gui/widgets/XMLConfiguredMenus.cpp
-@@ -558,7 +558,14 @@ template <typename T> struct XMLMenuAH : public juce::AccessibilityHandler
+@@ -612,7 +612,14 @@ template <typename T> struct XMLMenuAH : public juce::AccessibilityHandler
  
      {
      }

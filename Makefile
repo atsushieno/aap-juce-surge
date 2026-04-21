@@ -17,9 +17,10 @@ PATCH_DEPTH=1
 
 # JUCE patches if any
 JUCE_PATCHES= \
-        $(shell pwd)/external/aap-juce/juce-patches/7.0.12/disable-cgwindowlistcreateimage.patch \
-        $(shell pwd)/external/aap-juce/juce-patches/7.0.6/support-plugin-ui.patch \
-        $(shell pwd)/external/aap-juce/juce-patches/7.0.11/juce-component-peer-view-touch.patch \
-        $(shell pwd)/external/aap-juce/juce-patches/7.0.12/popup-menu-android.patch
+	$(AAP_JUCE_DIR)/juce-patches/7.0.6/export-jni-symbols.patch \
+        $(AAP_JUCE_DIR)/juce-patches/7.0.6/disable-detach-current-thread.patch \
+        $(AAP_JUCE_DIR)/juce-patches/8.0.12/support-plugin-ui.patch \
+        $(AAP_JUCE_DIR)/juce-patches/8.0.12/juce-component-peer-view-touch.patch \
+        $(AAP_JUCE_DIR)/juce-patches/8.0.12/popup-menu-android.patch
 
 include $(AAP_JUCE_DIR)/Makefile.cmake-common
