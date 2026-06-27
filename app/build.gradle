@@ -47,6 +47,7 @@ android {
         implementation libs.aap.midi.device.service
         implementation libs.aap.ui.compose
         implementation libs.aap.ui.compose.app
+        implementation libs.aap.js.controller
     }
 
     externalNativeBuild {
