@@ -1,10 +1,10 @@
 # aap-juce-surge: port of Surge-XT to AAP
 
-It is an port of [Surge-XT](https://github.com/surge-synthesizer/surge) (and supposedly Surge-FX) to AAP (Audio Plugins For Android) using aap-juce.
+It is a port of [Surge XT](https://github.com/surge-synthesizer/surge) to [Audio Plugins For Android (AAP)](https://github.com/atsushieno/aap-core), using [aap-juce](https://github.com/atsushieno/aap-juce).
 
-surge builds on top of quite complicated software stacks, and there could be various parts that depend on desktop-isms. So far we only verified it loads and generates some audio outputs on aaphostsample and aap-juce-simple-host (it is quite common to AAP ports overall).
+surge builds on top of quite complicated software stacks, and there could be various parts that depend on desktop-isms, even after the patches we applied to surge.
 
-Due to build issues on LuaJIT, arm32 and x86 builds are disabled.
+We still haven't ported Surge FX for kind of silly reason - building Surge XT is already too big and memory-consuming work. Building another one will run out of Java heap space (we can build separately but it is complicating build structure...)
 
 ## LICENSES
 
