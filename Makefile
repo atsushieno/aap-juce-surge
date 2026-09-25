@@ -22,6 +22,7 @@ JUCE_PATCHES= \
         $(AAP_JUCE_DIR)/juce-patches/8.0.10/support-plugin-ui.patch \
         $(AAP_JUCE_DIR)/juce-patches/8.0.12/embedded-peer-window-guard.patch \
         $(AAP_JUCE_DIR)/juce-patches/8.0.12/juce-component-peer-view-touch.patch \
+        $(AAP_JUCE_DIR)/juce-patches/8.0.12/component-peer-view-unregister-lifecycle-callbacks.patch \
         $(AAP_JUCE_DIR)/juce-patches/8.0.12/popup-menu-android.patch
 
 include $(AAP_JUCE_DIR)/Makefile.cmake-common

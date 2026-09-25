@@ -1,6 +1,5 @@
 plugins {
     id 'com.android.application'
-    id 'kotlin-android'
 }
 
 
@@ -63,9 +62,6 @@ android {
     }
 
     ndkVersion libs.versions.ndk.get()
-    kotlinOptions {
-        jvmTarget = '1.8'
-    }
 }
 
 task copySurgeAssets(type: Copy) {
