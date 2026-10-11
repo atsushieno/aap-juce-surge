@@ -169,20 +169,14 @@ index 9e37e5e..1943187 100644
  
  fs::path sharedLibraryBinaryPath()
 diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
-index 6a42db1a..dbc6d736 100644
+index 6a42db1..f1bfe7f 100644
 --- a/src/CMakeLists.txt
 +++ b/src/CMakeLists.txt
-@@ -186,3 +186,10 @@ endif()
+@@ -186,3 +186,4 @@ endif()
  if(NOT CMAKE_CROSSCOMPILING AND NOT SURGE_SKIP_JUCE_FOR_RACK)
    include(cmake/pluginval.cmake)
  endif()
 +
-+# begin AAP specifics -->
-+
-+message("AAP_DIR: ${AAP_DIR}")
-+message("AAP_JUCE_DIR: ${AAP_JUCE_DIR}")
-+juce_add_modules(${AAP_JUCE_DIR}/aap-modules/aap_audio_processors)
-+# <-- end AAP specifics
 diff --git a/src/common/CMakeLists.txt b/src/common/CMakeLists.txt
 index 846189cc..32b90235 100644
 --- a/src/common/CMakeLists.txt
@@ -215,103 +209,25 @@ index 1b0bc503..329ae598 100644
      const auto installPath = sst::plugininfra::paths::sharedLibraryBinaryPath().parent_path();
  
 diff --git a/src/surge-fx/CMakeLists.txt b/src/surge-fx/CMakeLists.txt
-index d00389c5..a3bf8a49 100644
+index d00389c..31fd24a 100644
 --- a/src/surge-fx/CMakeLists.txt
 +++ b/src/surge-fx/CMakeLists.txt
-@@ -97,3 +97,44 @@ if(SURGE_BUILD_CLAP)
+@@ -97,3 +97,5 @@ if(SURGE_BUILD_CLAP)
  endif()
  
  surge_juce_package(${PROJECT_NAME} "Surge XT Effects")
 +
-+# begin AAP specifics -->
-+
-+# They are needed in desktop too, for generate-aap-metadata.
-+include_directories(
-+        "${AAP_DIR}/include"
-+        "${AAP_JUCE_DIR}/modules"
-+)
-+
-+add_definitions([[-DJUCE_PUSH_NOTIFICATIONS_ACTIVITY="com/rmsl/juce/JuceActivity"]])
-+
-+target_compile_definitions(${PROJECT_NAME} PUBLIC
-+        JUCE_PUSH_NOTIFICATIONS=1
-+        JUCEAAP_HAVE_AUDIO_PLAYHEAD_NEW_POSITION_INFO=1
-+)
-+
-+if (ANDROID)
-+
-+    # dependencies
-+    find_library(log "log")
-+    find_library(android "android")
-+    find_library(glesv2 "GLESv2")
-+    find_library(egl "EGL")
-+    find_package(androidaudioplugin REQUIRED CONFIG)
-+    set(cpufeatures_lib "cpufeatures")
-+    set(oboe_lib "oboe")
-+
-+    target_include_directories(${PROJECT_NAME} PRIVATE
-+            "${ANDROID_NDK}/sources/android/cpufeatures"
-+            "${OBOE_DIR}/include"
-+            )
-+
-+endif (ANDROID)
-+
-+target_link_libraries(${PROJECT_NAME}
-+        PRIVATE
-+        androidaudioplugin::androidaudioplugin
-+        aap_audio_processors
-+        )
-+# <-- end Android specifics
-+# <-- end AAP specifics
++aap_juce_plugin(TARGET ${PROJECT_NAME})
 diff --git a/src/surge-xt/CMakeLists.txt b/src/surge-xt/CMakeLists.txt
-index 3c23c116..e081ada7 100644
+index 3c23c11..99a53d6 100644
 --- a/src/surge-xt/CMakeLists.txt
 +++ b/src/surge-xt/CMakeLists.txt
-@@ -268,3 +268,44 @@ surge_juce_package(${PROJECT_NAME} "Surge XT")
+@@ -268,3 +268,5 @@ surge_juce_package(${PROJECT_NAME} "Surge XT")
  if (${SURGE_BUILD_TESTRUNNER})
    add_subdirectory(xt-tests)
  endif()
 +
-+# begin AAP specifics -->
-+
-+# They are needed in desktop too, for generate-aap-metadata.
-+include_directories(
-+        "${AAP_DIR}/include"
-+        "${AAP_JUCE_DIR}/modules"
-+)
-+
-+add_definitions([[-DJUCE_PUSH_NOTIFICATIONS_ACTIVITY="com/rmsl/juce/JuceActivity"]])
-+
-+target_compile_definitions(${PROJECT_NAME} PUBLIC
-+        JUCE_PUSH_NOTIFICATIONS=1
-+        JUCEAAP_HAVE_AUDIO_PLAYHEAD_NEW_POSITION_INFO=1
-+)
-+
-+if (ANDROID)
-+
-+  # dependencies
-+  find_library(log "log")
-+  find_library(android "android")
-+  find_library(glesv2 "GLESv2")
-+  find_library(egl "EGL")
-+  find_package(androidaudioplugin REQUIRED CONFIG)
-+  set(cpufeatures_lib "cpufeatures")
-+  set(oboe_lib "oboe")
-+
-+  target_include_directories(${PROJECT_NAME} PRIVATE
-+          "${ANDROID_NDK}/sources/android/cpufeatures"
-+          "${OBOE_DIR}/include"
-+  )
-+
-+endif (ANDROID)
-+
-+target_link_libraries(${PROJECT_NAME}
-+        PRIVATE
-+        androidaudioplugin::androidaudioplugin
-+        aap_audio_processors
-+)
-+# <-- end Android specifics
-+# <-- end AAP specifics
++aap_juce_plugin(TARGET ${PROJECT_NAME})
 diff --git a/src/surge-xt/gui/SurgeGUIEditor.cpp b/src/surge-xt/gui/SurgeGUIEditor.cpp
 index c2fa86e4..47b23924 100644
 --- a/src/surge-xt/gui/SurgeGUIEditor.cpp
@@ -380,3 +296,19 @@ index bb309750..209d7d1e 100644
  
      T *comp;
      JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(XMLMenuAH);
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index c6f78a6..d68b076 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1,5 +1,10 @@
+ # vi:set sw=2 et:
+-cmake_minimum_required(VERSION 3.15)
++cmake_minimum_required(VERSION 3.22)
++
++get_filename_component(app_source "${CMAKE_CURRENT_LIST_DIR}" REALPATH)
++add_subdirectory("${app_source}/../aap-juce" "${CMAKE_CURRENT_BINARY_DIR}/aap-juce" EXCLUDE_FROM_ALL)
++aap_juce_configure(JUCE_SOURCE_DIR libs/JUCE ICON resources/surge-xt/SurgeLogo.png ADOPT_EXISTING_PATCHES)
++
+ cmake_policy(SET CMP0091 NEW)
+ set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+ set(CMAKE_OSX_DEPLOYMENT_TARGET 10.15 CACHE STRING "Minimum macOS version")
