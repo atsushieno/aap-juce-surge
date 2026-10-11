@@ -22,7 +22,7 @@ android {
                         "-DLUAJIT_BLD=0",
                         "-DJUCE_ANDROID=1",
                         "-DSURGE_SKIP_VST3=1",
-                        "-DCMAKE_BUILD_TYPE=RelWithDebInfo",
+                        "-DCMAKE_BUILD_TYPE=Release",
                         "-DANDROID_STL=c++_shared", "-DANDROID_CPP_FEATURES=exceptions rtti"
             }
         }
