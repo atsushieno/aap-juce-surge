@@ -18,6 +18,8 @@ android {
             cmake {
                 // FIXME: it should be removed once we upgrade surge that does not reference lame JUCE version.
                 cppFlags("-Wno-unqualified-std-cast-call")
+                // JUCE's bundled oboe passes -Ofast for Release builds, which NDK 29+ clang deprecates (and surge enables -Werror).
+                cppFlags("-Wno-deprecated-ofast")
                 arguments "-DSURGE_BUILD_TESTRUNNER=0",
                         "-DLUAJIT_BLD=0",
                         "-DJUCE_ANDROID=1",
